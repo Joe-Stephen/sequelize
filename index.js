@@ -9,11 +9,13 @@ const sequelize = new Sequelize(
   }
 );
 
-sequelize
-  .authenticate()
-  .then(() => {
+const authenticateSequelize = async () => {
+  try {
+    await sequelize.authenticate();
     console.log("Connection successfull.");
-  })
-  .catch((err) => {
+  } catch (error) {
     console.error("Error in sequelize authentication function :", err);
-  });
+  }
+};
+
+authenticateSequelize();
