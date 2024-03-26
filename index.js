@@ -37,6 +37,9 @@ const User = sequelize.define(
     username: {
       type: Sequelize.DataTypes.STRING,
       allowNull: false,
+      validate: {
+        len: [3, 6],
+      },
     },
     password: {
       type: Sequelize.DataTypes.STRING,
@@ -66,7 +69,68 @@ const User = sequelize.define(
 //   });
 
 //multiple table syncing
-sequelize.sync({ alter: true });
+sequelize
+  .sync({ alter: true })
+  .then(() => {
+    //working with our updated table
+    //creating an object that can be saved to database
+    // const user = User.build({
+    //   username: "Joe Stephen",
+    //   password: "123456",
+    //   age: 23,
+    //   wittCodeRocks: true,
+    // });
+
+    //single creation
+
+    // return User.create({
+    //   username: "Savi",
+    //   password: "123456",
+    //   age: 23,
+    //   wittCodeRocks: true,
+    // });
+
+    //returning the user creation promise
+    //  return user.save();
+
+    //bulk creation
+    return User.bulkCreate(
+      [
+        {
+          username: "Joe",
+          password: "123456",
+          age: 23,
+          wittCodeRocks: true,
+        },
+        {
+          username: "Savi",
+          password: "123456",
+          age: 22,
+          wittCodeRocks: false,
+        },
+        {
+          username: "Lakshman",
+          password: "123456",
+          age: 21,
+          wittCodeRocks: true,
+        },
+        {
+          username: "Jo",
+          password: "123456",
+          age: 23,
+          wittCodeRocks: true,
+        },
+      ],
+      { validate: true }
+    );
+  })
+  .then((data) => {
+    console.log(data.toJSON());
+    console.log("User created successfully.");
+  })
+  .catch((error) => {
+    console.error("Error in creating user :", error);
+  });
 
 //drop a single table
 // User.drop()
