@@ -1,4 +1,7 @@
 const Sequelize = require("sequelize");
+const bcrypt = require("bcrypt");
+const zlib = require("zlib");
+const { DataTypes, Op } = Sequelize;
 const dotenv = require("dotenv").config();
 const sequelize = new Sequelize(
   process.env.dbName,
@@ -6,6 +9,7 @@ const sequelize = new Sequelize(
   process.env.dbPassword,
   {
     dialect: "mysql",
+    logging: false, //disable the logging
     //this will freeze the names of all tables at once
     // define: {
     //   freezeTableName: true,
@@ -30,26 +34,92 @@ const User = sequelize.define(
   "user",
   {
     user_id: {
-      type: Sequelize.DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
     username: {
-      type: Sequelize.DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
         len: [3, 6],
       },
     },
     password: {
-      type: Sequelize.DataTypes.STRING,
+      type: DataTypes.STRING,
+      set(value) {
+        //hashing the password
+        const salt = bcrypt.genSaltSync(12);
+        const hash = bcrypt.hashSync(value, salt);
+        this.setDataValue("password", hash);
+      },
     },
     age: {
-      type: Sequelize.DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       defaultValue: 20,
     },
     wittCodeRocks: {
-      type: Sequelize.DataTypes.BOOLEAN,
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    description: {
+      type: DataTypes.STRING,
+      set(value) {
+        const compressed = zlib.deflateSync(value).toString("base64");
+        this.setDataValue("description", compressed);
+      },
+      get() {
+        const value = this.getDataValue("description");
+        const extracted = zlib.inflateSync(Buffer.from(value, "base64"));
+        return extracted.toString();
+      },
+    },
+    aboutUser: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return `${this.username} : ${this.description}`;
+      },
+      set(value) {
+        throw new Error("You cannot set this value for AboutUser. It is a virtual field.");
+      },
+    },
+  },
+  {
+    //this will disable the pluralization for table name. (only for the user table)
+    freezeTableName: true,
+  }
+);
+
+//student model
+const Student = sequelize.define(
+  "student",
+  {
+    student_id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: {
+        len: [3, 20],
+      },
+      get() {
+        const rawValue = this.getDataValue("name");
+        return rawValue ? rawValue.toUpperCase() : null;
+      },
+    },
+    favorite_class: {
+      type: DataTypes.STRING(25),
+      defaultValue: "Computer Science",
+    },
+    school_year: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    wittCodeSubbed: {
+      type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
   },
@@ -60,6 +130,7 @@ const User = sequelize.define(
 );
 
 //individual table syncing
+
 // User.sync({ alter: true })
 //   .then((data) => {
 //     console.log("User table synced successfully.");
@@ -69,11 +140,14 @@ const User = sequelize.define(
 //   });
 
 //multiple table syncing
+
 sequelize
   .sync({ alter: true })
   .then(() => {
     //working with our updated table
+
     //creating an object that can be saved to database
+
     // const user = User.build({
     //   username: "Joe Stephen",
     //   password: "123456",
@@ -83,50 +157,134 @@ sequelize
 
     //single creation
 
-    // return User.create({
-    //   username: "Savi",
-    //   password: "123456",
-    //   age: 23,
-    //   wittCodeRocks: true,
-    // });
+    return User.create({
+      username: "LLoyd",
+      password: "123456",
+      age: 25,
+      wittCodeRocks: true,
+      description:
+        "You can take away my house, all my tricks and toys. But one thing you can't take away, I AM IRON MAN.",
+      aboutUser: "asdfasdf",
+    });
+
+    // return User.findOne({where:{username:'Stark'}})
 
     //returning the user creation promise
-    //  return user.save();
 
+    //  return user.save();
     //bulk creation
-    return User.bulkCreate(
-      [
-        {
-          username: "Joe",
-          password: "123456",
-          age: 23,
-          wittCodeRocks: true,
-        },
-        {
-          username: "Savi",
-          password: "123456",
-          age: 22,
-          wittCodeRocks: false,
-        },
-        {
-          username: "Lakshman",
-          password: "123456",
-          age: 21,
-          wittCodeRocks: true,
-        },
-        {
-          username: "Jo",
-          password: "123456",
-          age: 23,
-          wittCodeRocks: true,
-        },
-      ],
-      { validate: true }
-    );
+    // return Student.bulkCreate(
+    //   [
+    //     {
+    //       name: "Joe",
+    //       favorite_class: "Badminton",
+    //       school_year: "2010",
+    //       wittCodeSubbed: false,
+    //     },
+    //     {
+    //       name: "Savi",
+    //       favorite_class: "Football",
+    //       school_year: "2009",
+    //       wittCodeSubbed: true,
+    //     },
+    //     {
+    //       name: "Lakshman",
+    //       favorite_class: "Hockey",
+    //       school_year: "2011",
+    //       wittCodeSubbed: true,
+    //     },
+    //     {
+    //       name: "Varun",
+    //       favorite_class: "Football",
+    //       school_year: "2010",
+    //       wittCodeSubbed: true,
+    //     },
+    //     {
+    //       name: "Abin",
+    //       favorite_class: "Badminton",
+    //       school_year: "2009",
+    //       wittCodeSubbed: false,
+    //     },
+    //     {
+    //       name: "Ebin",
+    //       favorite_class: "Hockey",
+    //       school_year: "2010",
+    //       wittCodeSubbed: true,
+    //     },
+    //   ],
+    //   { validate: true }
+    // );
+
+    // querying
+    //findAll()
+
+    // return User.findAll({
+    //   attributes: [[sequelize.fn("AVG", sequelize.col("age")), "totalAge"]],
+    // });
+
+    //exclude fields
+
+    // return User.findAll({
+    //   attributes: {exclude:['password']},
+    // });
+
+    //find all users where age less than 45 or equals null
+
+    // return User.findAll({
+    //   where:{
+    //     age:{
+    //       [Op.or]:{
+    //         [Op.lt]:45,
+    //         [Op.eq]:null
+    //       }
+    //     }
+    //   }
+    // })
+
+    //find all users whose name has exactly 6 letters
+
+    // return User.findAll({
+    //   where: sequelize.where(
+    //     sequelize.fn("char_length", sequelize.col("username")),
+    //     11
+    //   ),
+    // });
+
+    //find the maximum age from the users table
+
+    // return User.sum("age");
+
+    //finding number of students whose favorite_class=computer science or if they are subbed to wittCode
+
+    // return Student.findAll({
+    //   attributes: ["name"],
+    //   where: {
+    //     [Op.or]: {
+    //       favorite_class: { [Op.eq]: "Computer Science" },
+    //       wittCodeSubbed: { [Op.eq]: true },
+    //     },
+    //   },
+    // });
+
+    //finding number of students in each school_year
+
+    // return Student.findAll({
+    //   attributes: [
+    //     "school_year",
+    //     [sequelize.fn("COUNT", sequelize.col("school_year")), "num_students"],
+    //   ],
+    //   group: "school_year",
+    // });
+
+    // return Student.findAll();
   })
   .then((data) => {
+    console.log("query completed successfully.");
     console.log(data.toJSON());
-    console.log("User created successfully.");
+
+    // data.forEach((element) => {
+    //   console.log(element.toJSON());
+    // });
   })
   .catch((error) => {
     console.error("Error in creating user :", error);
