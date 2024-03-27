@@ -157,15 +157,15 @@ sequelize
 
     //single creation
 
-    return User.create({
-      username: "LLoyd",
-      password: "123456",
-      age: 25,
-      wittCodeRocks: true,
-      description:
-        "You can take away my house, all my tricks and toys. But one thing you can't take away, I AM IRON MAN.",
-      aboutUser: "asdfasdf",
-    });
+    // return User.create({
+    //   username: "LLoyd",
+    //   password: "123456",
+    //   age: 25,
+    //   wittCodeRocks: true,
+    //   description:
+    //     "You can take away my house, all my tricks and toys. But one thing you can't take away, I AM IRON MAN.",
+    //   aboutUser: "asdfasdf",
+    // });
 
     // return User.findOne({where:{username:'Stark'}})
 
